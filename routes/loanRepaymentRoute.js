@@ -1,19 +1,29 @@
 const express = require('express');
 const router = express.Router();
-const profileController = require('../controllers/profile_view');
+const repaymentController = require('../controllers/loanRepayment_view');
 const authenticateToken = require('../Middleware/authenticateToken');
 const rolesList = require('../Helpers/roleList');
 const verifyRoles = require('../Helpers/verifyRole');
 
-router.post('/create', profileController.createProfile);
+router.route('/create')
+    .post(
+        authenticateToken,
+        verifyRoles(
+            rolesList.admin,
+            rolesList.bank_admin,
+            rolesList.staff,
+            rolesList.customer
+        ),
+        repaymentController.createRepayment
+    );
 router.route('/all')
     .get(
         authenticateToken,
         verifyRoles(
             rolesList.admin,
         ),
-        profileController.getAllProfiles
-    )
+        repaymentController.getAllRepayments
+    );
 router.route('/:bankId/all')
     .get(
         authenticateToken,
@@ -21,8 +31,8 @@ router.route('/:bankId/all')
             rolesList.admin,
             rolesList.bank_admin,
         ),
-        profileController.getAllProfilesByBank
-    )
+        repaymentController.getAllRepaymentsByBank
+    );
 router.route('/:branchId/all')
     .get(
         authenticateToken,
@@ -30,40 +40,39 @@ router.route('/:branchId/all')
             rolesList.admin,
             rolesList.bank_admin,
         ),
-        profileController.getAllProfilesByBranch
-    )
-router.route('/:id')
+        repaymentController.getAllRepaymentsByBranch
+    );
+router.route('/user/:userId')
     .get(
         authenticateToken,
         verifyRoles(
             rolesList.admin,
             rolesList.bank_admin,
             rolesList.staff,
-            rolesList.customer_service,
-            rolesList.customer
+            rolesList.customer // Only if they're accessing their own repayments
         ),
-        profileController.getProfileById
+        repaymentController.getRepaymentsByUser
     );
-router.route('/:id/update')
+router.route('/:repaymentId/update')
     .put(
         authenticateToken,
         verifyRoles(
             rolesList.admin,
             rolesList.bank_admin,
             rolesList.staff,
-            rolesList.customer
+            rolesList.customer // Only if they're updating their own repayments
         ),
-        profileController.updateProfile
-    )
-router.route('/:id/delete')
+        repaymentController.updateRepayment
+    );
+router.route('/:repaymentId/delete')
     .delete(
         authenticateToken,
         verifyRoles(
             rolesList.admin,
             rolesList.bank_admin,
-            rolesList.staff
+            rolesList.staff,
         ),
-        profileController.deleteProfile
-    )
+        repaymentController.deleteRepayment
+    );
 
 module.exports = router;

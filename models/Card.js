@@ -16,7 +16,7 @@ const Card = sequelize.define('Card', {
         allowNull: false,
         unique: true,
         validate: {
-            isCreditCard: true,
+            len: [13, 19], // Looser check instead of isCreditCard
         },
     },
     lastFourDigits: {
@@ -42,9 +42,6 @@ const Card = sequelize.define('Card', {
     pin: {
         type: DataTypes.STRING,
         allowNull: false,
-        validate: {
-            len: [4, 6], // hashed PIN recommended
-        },
     },
     expirationDate: {
         type: DataTypes.DATE,

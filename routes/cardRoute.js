@@ -1,28 +1,37 @@
 const express = require('express');
 const router = express.Router();
-const profileController = require('../controllers/profile_view');
+const cardController = require('../controllers/card_view');
 const authenticateToken = require('../Middleware/authenticateToken');
 const rolesList = require('../Helpers/roleList');
 const verifyRoles = require('../Helpers/verifyRole');
 
-router.post('/create', profileController.createProfile);
+router.route('/create')
+    .post(
+        authenticateToken, 
+        verifyRoles(
+            rolesList.admin,
+            rolesList.bank_admin,
+            rolesList.staff
+        ), 
+        cardController.createCard
+    );
 router.route('/all')
     .get(
         authenticateToken,
         verifyRoles(
             rolesList.admin,
         ),
-        profileController.getAllProfiles
-    )
-router.route('/:bankId/all')
+        cardController.getAllCards
+    );
+router.route('/:bankId/')
     .get(
         authenticateToken,
         verifyRoles(
             rolesList.admin,
             rolesList.bank_admin,
         ),
-        profileController.getAllProfilesByBank
-    )
+        cardController.getAllCardsByBank
+    );
 router.route('/:branchId/all')
     .get(
         authenticateToken,
@@ -30,32 +39,31 @@ router.route('/:branchId/all')
             rolesList.admin,
             rolesList.bank_admin,
         ),
-        profileController.getAllProfilesByBranch
-    )
-router.route('/:id')
+        cardController.getAllCardsByBranch
+    );
+router.route('/:cardId')
     .get(
         authenticateToken,
         verifyRoles(
             rolesList.admin,
             rolesList.bank_admin,
-            rolesList.staff,
-            rolesList.customer_service,
-            rolesList.customer
+            rolesList.staff
         ),
-        profileController.getProfileById
+        cardController.getCardById
     );
-router.route('/:id/update')
+
+router.route('/:cardId/update')
     .put(
         authenticateToken,
         verifyRoles(
             rolesList.admin,
             rolesList.bank_admin,
-            rolesList.staff,
-            rolesList.customer
+            rolesList.staff
         ),
-        profileController.updateProfile
-    )
-router.route('/:id/delete')
+        cardController.updateCard
+    );
+
+router.route('/:cardId/delete')
     .delete(
         authenticateToken,
         verifyRoles(
@@ -63,7 +71,7 @@ router.route('/:id/delete')
             rolesList.bank_admin,
             rolesList.staff
         ),
-        profileController.deleteProfile
-    )
+        cardController.deleteCard
+    );
 
 module.exports = router;

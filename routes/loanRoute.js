@@ -1,31 +1,19 @@
 const express = require('express');
 const router = express.Router();
-const transactionController = require('../controllers/transaction_view');
-const validateTransaction = require('../Middleware/validateTransaction');
+const loanController = require('../controllers/loan_view');
 const authenticateToken = require('../Middleware/authenticateToken');
 const rolesList = require('../Helpers/roleList');
 const verifyRoles = require('../Helpers/verifyRole');
 
-router.route('/create')
-    .post(
-        authenticateToken,
-        verifyRoles(
-            rolesList.admin,
-            rolesList.bank_admin,
-            rolesList.staff,
-            rolesList.customer
-        ),
-        validateTransaction, 
-        transactionController.createTransaction
-    )
+router.post('/create', loanController.createLoan);
 router.route('/all')
     .get(
         authenticateToken,
         verifyRoles(
             rolesList.admin,
         ),
-        transactionController.getAllTransactions
-    );
+        loanController.getAllLoans
+    )
 router.route('/:bankId/all')
     .get(
         authenticateToken,
@@ -33,8 +21,8 @@ router.route('/:bankId/all')
             rolesList.admin,
             rolesList.bank_admin,
         ),
-        transactionController.getAllTransactionsByBank
-    );
+        loanController.getAllLoansByBank
+    )
 router.route('/:branch/all')
     .get(
         authenticateToken,
@@ -42,50 +30,19 @@ router.route('/:branch/all')
             rolesList.admin,
             rolesList.bank_admin,
         ),
-        transactionController.getAllTransactionsByBranch
-    );
-router.route('/:id')
-    .get(
-        authenticateToken,
-        verifyRoles(
-            rolesList.admin,
-            rolesList.bank_admin,
-            rolesList.staff,
-            rolesList.customer
-        ),
-        transactionController.getTransactionById
+        loanController.getAllLoansByBranchId
     )
-router.route('/account/:accountId')
+router.route('/:loanId')
     .get(
         authenticateToken,
         verifyRoles(
             rolesList.admin,
             rolesList.bank_admin,
             rolesList.staff,
-            rolesList.customer 
+            rolesList.customer, // Only if they're accessing their own loan
         ),
-        transactionController.getTransactionsByAccountId
+        loanController.getLoanById
     )
-router.route('/channel/:channel')
-    .get(
-        authenticateToken,
-        verifyRoles(
-            rolesList.admin,
-            rolesList.bank_admin,
-            rolesList.staff,
-        ),
-        transactionController.getTransactionsByChannel
-    )
-router.route('/type/:type')
-    .get(
-        authenticateToken,
-        verifyRoles(
-            rolesList.admin,
-            rolesList.bank_admin,
-            rolesList.staff,
-        ),
-        transactionController.getTransactionsByType
-    );
 router.route('/user/:userId')
     .get(
         authenticateToken,
@@ -93,29 +50,78 @@ router.route('/user/:userId')
             rolesList.admin,
             rolesList.bank_admin,
             rolesList.staff,
-            rolesList.customer
+            rolesList.customer,
         ),
-        transactionController.getTransactionsByUserId
-    );
-router.route('/:id/update')
+        loanController.getLoansByUserId
+    )
+router.route('/status/approved')
+    .get(
+        authenticateToken,
+        verifyRoles(
+            rolesList.admin,
+            rolesList.bank_admin,
+            rolesList.staff,
+        ),
+        loanController.getApprovedLoans
+    )
+router.route('/status/rejected')
+    .get(
+        authenticateToken,
+        verifyRoles(
+            rolesList.admin,
+            rolesList.bank_admin,
+            rolesList.staff,
+        ),
+        loanController.getRejectedLoans
+    )
+router.route('/status/disbursed')
+    .get(
+        authenticateToken,
+        verifyRoles(
+            rolesList.admin,
+            rolesList.bank_admin,
+            rolesList.staff,
+        ),
+        loanController.getDisbursedLoans
+    )
+router.route('/:loanId/update')
     .put(
         authenticateToken,
         verifyRoles(
             rolesList.admin,
             rolesList.bank_admin,
-            rolesList.staff
+            rolesList.staff,
         ),
-        transactionController.updateTransaction
+        loanController.updateLoan
     )
-router.route('/:id/delete')
+router.route('/:loanId/delete')
     .delete(
         authenticateToken,
         verifyRoles(
             rolesList.admin,
             rolesList.bank_admin,
-            rolesList.staff
+            rolesList.staff,
         ),
-        transactionController.deleteTransaction
+        loanController.deleteLoan
+    );
+router.route('/:loanId/approval')
+    .put(
+        authenticateToken,
+        verifyRoles(
+            rolesList.admin,
+            rolesList.bank_admin,
+        ),
+        loanController.approveOrRejectLoan
+    );
+router.route('/:loanId/disburse')
+    .put(
+        authenticateToken,
+        verifyRoles(
+            rolesList.admin,
+            rolesList.bank_admin,
+            rolesList.staff,
+        ),
+        loanController.disburseLoan
     );
 
 module.exports = router;

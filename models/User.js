@@ -58,11 +58,8 @@ const User = sequelize.define('User', {
     },
     nin: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
         unique: true,
-        validate: {
-            notEmpty: true,
-        },
     },
     role: {
         type: DataTypes.ENUM('admin', 'customer', 'bank_admin', 'staff', 'customer_service'),

@@ -50,7 +50,7 @@ const Transaction = sequelize.define('Transaction', {
         },
     },
     channel: {
-        type: DataTypes.ENUM('online', 'POS', 'ATM', 'bank_transfer'),
+        type: DataTypes.ENUM('online', 'POS', 'ATM', 'bank_transfer', 'inBank_withdrawal'),
         allowNull: true,
     },
     description: {

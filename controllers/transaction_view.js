@@ -1,4 +1,4 @@
-const { Account, Transaction } = require('../models');
+const { Account, Transaction, Card, Branch } = require('../models');
 // const { handleTransaction } = require('../Helpers/transactionHelper');
 const { createNotification } = require('../Helpers/notificationHelper');
 const sequelize = require('../db/connection');
@@ -7,10 +7,10 @@ const {
     updateBalances,
     notifyTransferParties
 } = require('../Helpers/transactionUtils');
+const bcrypt = require('bcrypt');
 
 exports.createTransaction = async (req, res) => {
     const t = await sequelize.transaction();
-
     try {
         const {
             userId,
@@ -21,11 +21,51 @@ exports.createTransaction = async (req, res) => {
             channel,
             description,
             fromAccountId,
-            toAccountId
+            toAccountId,
+            transferPin,
+            cardId,
+            cardPin
         } = req.body;
 
-        const reference = uuidv4();
+        // 🔐 Validate transfer pin for transfers
+        if (transactionType === 'transfer') {
+            if (!transferPin) {
+                return res.status(400).json({ message: 'Transfer pin is required for transfers' });
+            }
 
+            const fromAccount = await Account.findByPk(fromAccountId);
+            if (!fromAccount) {
+                return res.status(404).json({ message: 'Sender account not found' });
+            }
+
+            const isMatch = await bcrypt.compare(transferPin, fromAccount.transferPin);
+            if (!isMatch) {
+                return res.status(403).json({ message: 'Invalid transfer pin' });
+            }
+        }
+
+        // 🔐 Validate card pin for ATM, POS, and online withdrawals
+        if (
+            transactionType === 'withdrawal' &&
+            ['atm_withdrawal', 'pos_withdrawal', 'online_withdrawal'].includes(channel)
+        ) {
+            if (!cardId || !cardPin) {
+                return res.status(400).json({ message: 'Card ID and PIN are required for this withdrawal channel' });
+            }
+
+            const card = await Card.findByPk(cardId);
+            if (!card) {
+                return res.status(404).json({ message: 'Card not found' });
+            }
+
+            const isCardPinValid = await bcrypt.compare(cardPin, card.pin);
+            if (!isCardPinValid) {
+                return res.status(403).json({ message: 'Invalid card PIN' });
+            }
+        }
+
+        // 📄 Create transaction
+        const reference = uuidv4();
         const transactionData = {
             userId,
             accountId,
@@ -37,13 +77,15 @@ exports.createTransaction = async (req, res) => {
             fromAccountId: transactionType !== 'deposit' ? fromAccountId : null,
             toAccountId: transactionType !== 'withdrawal' ? toAccountId : null,
             reference,
-            status: 'completed',
+            status: 'completed'
         };
 
         const newTransaction = await Transaction.create(transactionData, { transaction: t });
 
+        // 💰 Update account balances
         await updateBalances({ transactionType, amount, fromAccountId, toAccountId }, t);
 
+        // 🔔 Notify users
         if (transactionType === 'transfer') {
             const from = await Account.findByPk(fromAccountId);
             const to = await Account.findByPk(toAccountId);
@@ -56,9 +98,9 @@ exports.createTransaction = async (req, res) => {
         } else {
             await createNotification({
                 userId,
-                type: 'info',
-                title: `${transactionType.toUpperCase()} - $${amount}`,
-                message: `Your ${transactionType} of $${amount} was successful.`,
+                transactionType,
+                amount,
+                currency,
                 referenceId: newTransaction.id
             }, t);
         }
@@ -69,9 +111,13 @@ exports.createTransaction = async (req, res) => {
             message: 'Transaction completed successfully',
             transaction: newTransaction
         });
+
     } catch (error) {
         await t.rollback();
-        res.status(500).json({ message: 'Failed to complete transaction', error: error.message });
+        res.status(500).json({
+            message: 'Failed to complete transaction',
+            error: error.message
+        });
     }
 };
 
@@ -94,6 +140,63 @@ exports.getAllTransactions = async (req, res) => {
         res.status(500).json({ message: 'Failed to fetch transactions', error: error.message });
     }
 };
+
+exports.getAllTransactionsByBank = async (req, res) => {
+    try {
+        const { bankId } = req.params;
+        const transactions = await Transaction.findAll({
+            include: [
+                {
+                    model: Account,
+                    as: 'account',
+                    include: [
+                        {
+                            model: Branch,
+                            as: 'branch',
+                            where: { bankId } // filter branches by bank
+                        }
+                    ]
+                }
+            ],
+            order: [['created', 'DESC']]
+        });
+
+        if (!transactions.length) {
+            return res.status(404).json({ message: 'No transactions found for this bank' });
+        }
+
+        res.status(200).json(transactions);
+    } catch (error) {
+        console.error('Error fetching transactions by bank:', error);
+        res.status(500).json({ message: 'Failed to get transactions for bank', error: error.message });
+    }
+};
+
+exports.getAllTransactionsByBranch = async (req, res) => {
+    try {
+        const { branchId } = req.params;
+        const transactions = await Transaction.findAll({
+            include: [
+                {
+                    model: Account,
+                    as: 'account',
+                    where: { branchId }
+                }
+            ],
+            order: [['created', 'DESC']]
+        });
+
+        if (!transactions.length) {
+            return res.status(404).json({ message: 'No transactions found for this branch' });
+        }
+
+        res.status(200).json(transactions);
+    } catch (error) {
+        console.error('Error fetching transactions by branch:', error);
+        res.status(500).json({ message: 'Failed to get transactions for branch', error: error.message });
+    }
+};
+
 
 exports.getTransactionById = async (req, res) => {
     const { id } = req.params;
@@ -214,33 +317,6 @@ exports.getTransactionsByChannel = async (req, res) => {
     } catch (error) {
         console.error('Fetch Transactions by Channel Error:', error);
         res.status(500).json({ message: 'Failed to fetch transactions by channel', error: error.message });
-    }
-};
-
-exports.getTransactionsByDateRange = async (req, res) => {
-    const { startDate, endDate } = req.query;
-
-    try {
-        const transactions = await Transaction.findAll({
-            where: {
-                createdAt: {
-                    [Op.between]: [new Date(startDate), new Date(endDate)]
-                }
-            },
-            include: [
-                { model: Account, as: 'fromAccount' },
-                { model: Account, as: 'toAccount' }
-            ]
-        });
-
-        if (transactions.length === 0) {
-            return res.status(404).json({ message: 'No transactions found for this date range' });
-        }
-
-        res.status(200).json(transactions);
-    } catch (error) {
-        console.error('Fetch Transactions by Date Range Error:', error);
-        res.status(500).json({ message: 'Failed to fetch transactions for this date range', error: error.message });
     }
 };
 

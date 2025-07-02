@@ -48,6 +48,26 @@ exports.getAllBranches = async (req, res) => {
     }
 };
 
+exports.getAllBranchesByBank = async (req, res) => {
+  try {
+    const { bankId } = req.params;
+
+    const branches = await Branch.findAll({
+      where: { bankId },
+      order: [['created', 'DESC']] // optional sorting
+    });
+
+    if (!branches.length) {
+      return res.status(404).json({ message: 'No branches found for this bank' });
+    }
+
+    res.status(200).json(branches);
+  } catch (error) {
+    console.error('Error fetching branches by bank:', error);
+    res.status(500).json({ message: 'Failed to fetch branches', error: error.message });
+  }
+};
+
 exports.getBranchById = async (req, res) => {
     try {
         const { id } = req.params;

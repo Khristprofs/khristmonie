@@ -47,6 +47,65 @@ exports.getAllProfiles = async (req, res) => {
     }
 };
 
+exports.getProfilesByBank = async (req, res) => {
+    try {
+        const { bankId } = req.params;
+
+        const profiles = await Profile.findAll({
+            include: {
+                model: User,
+                as: 'user',
+                include: {
+                    model: Account,
+                    as: 'accounts',
+                    where: { bankId },
+                    attributes: ['id', 'accountNumber', 'bankId']
+                }
+            },
+            order: [['created', 'DESC']]
+        });
+
+        if (!profiles.length) {
+            return res.status(404).json({ message: 'No profiles found for this bank' });
+        }
+
+        res.status(200).json(profiles);
+    } catch (error) {
+        console.error('Error fetching profiles by bank:', error);
+        res.status(500).json({ message: 'Failed to fetch profiles', error: error.message });
+    }
+};
+
+exports.getProfilesByBranch = async (req, res) => {
+    try {
+        const { branchId } = req.params;
+
+        const profiles = await Profile.findAll({
+            include: {
+                model: User,
+                as: 'user',
+                include: {
+                    model: Account,
+                    as: 'accounts',
+                    where: { branchId },
+                    attributes: ['id', 'accountNumber', 'branchId']
+                }
+            },
+            order: [['created', 'DESC']]
+        });
+
+        if (!profiles.length) {
+            return res.status(404).json({ message: 'No profiles found for this branch' });
+        }
+
+        res.status(200).json(profiles);
+    } catch (error) {
+        console.error('Error fetching profiles by branch:', error);
+        res.status(500).json({ message: 'Failed to fetch profiles', error: error.message });
+    }
+};
+
+
 exports.getProfileById = async (req, res) => {
     const { id } = req.params;
     try {
