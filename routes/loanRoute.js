@@ -21,7 +21,7 @@ router.route('/:bankId/all')
             rolesList.admin,
             rolesList.bank_admin,
         ),
-        loanController.getAllLoansByBank
+        loanController.getLoansByBank
     )
 router.route('/:branch/all')
     .get(
@@ -30,7 +30,7 @@ router.route('/:branch/all')
             rolesList.admin,
             rolesList.bank_admin,
         ),
-        loanController.getAllLoansByBranchId
+        loanController.getLoansByBranch
     )
 router.route('/:loanId')
     .get(

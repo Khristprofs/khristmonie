@@ -91,6 +91,16 @@ const User = sequelize.define('User', {
         allowNull: false,
         defaultValue: 'active',
     },
+    bankId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references: {
+            model: 'banks',
+            key: 'id'
+        },
+        onDelete: 'SET NULL',
+        onUpdate: 'CASCADE'
+    }
 }, {
     tableName: 'users',
     timestamps: true,

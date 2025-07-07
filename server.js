@@ -14,6 +14,7 @@ const loanRepaymentRoute = require('./routes/loanRepaymentRoute');
 const authRoute = require('./routes/authRoute');
 const refreshRoute = require('./routes/refreshRoute');
 const cookieParser = require('cookie-parser');
+const healthRoute = require('./routes/healthRoute');
 
 const db = require('./models'); // This includes sequelize and models
 
@@ -44,7 +45,8 @@ app.use('/api/v1/card', cardRoute);
 app.use('/api/v1/loan', loanRoute);
 app.use('/api/v1/repayment', loanRepaymentRoute);
 app.use('/api/v1/auth', authRoute);
-app.use('/api/v1/refresh', refreshRoute)
+app.use('/api/v1/refresh', refreshRoute);
+app.use('/api/v1/health', healthRoute);
 
 // Test DB connection
 db.sequelize.authenticate()

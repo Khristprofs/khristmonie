@@ -52,8 +52,18 @@ router.delete('/:id/delete',
 
 router.get('/role/:role',
     authenticateToken,
-    verifyRoles(rolesList.admin, rolesList.bank_admin),
+    verifyRoles(rolesList.admin),
     userController.getUsersByRole
 );
 
+router.get('/:bankId/:role',
+    authenticateToken,
+    verifyRoles(rolesList.admin, rolesList.bank_admin),
+    userController.getUsersInBankByRole
+);
+router.get('/:branchId/:role',
+    authenticateToken,
+    verifyRoles(rolesList.admin, rolesList.bank_admin),
+    userController.getUsersByRoleInBranch
+);
 module.exports = router;

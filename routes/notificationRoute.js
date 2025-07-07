@@ -6,7 +6,7 @@ const rolesList = require('../Helpers/roleList');
 const verifyRoles = require('../Helpers/verifyRole');
 
 
-router.get('/all')
+router.route('/all')
     .get(
         authenticateToken,
         verifyRoles(

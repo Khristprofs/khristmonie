@@ -6,7 +6,18 @@ const rolesList = require('../Helpers/roleList');
 const verifyRoles = require('../Helpers/verifyRole');
 
 
-router.post('/create', accountController.createAccount);
+router.route('/create')
+    .post(
+        authenticateToken,
+        verifyRoles(
+            rolesList.admin,
+            rolesList.staff,
+            rolesList.bank_admin,
+            rolesList.customer_service,
+            rolesList.customer
+        ),
+        accountController.createAccount
+    )
 router.route('/all')
     .get(
         authenticateToken, 

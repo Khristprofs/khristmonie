@@ -21,7 +21,7 @@ router.route('/:bankId/all')
             rolesList.admin,
             rolesList.bank_admin,
         ),
-        profileController.getAllProfilesByBank
+        profileController.getProfilesByBank
     )
 router.route('/:branchId/all')
     .get(
@@ -30,7 +30,7 @@ router.route('/:branchId/all')
             rolesList.admin,
             rolesList.bank_admin,
         ),
-        profileController.getAllProfilesByBranch
+        profileController.getProfilesByBranch
     )
 router.route('/:id')
     .get(

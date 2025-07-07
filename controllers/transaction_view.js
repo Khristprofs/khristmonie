@@ -107,10 +107,17 @@ exports.createTransaction = async (req, res) => {
 
         await t.commit();
 
+        const updatedAccount = await Account.findByPk(
+            fromAccountId || accountId,
+            { attributes: ['id', 'balance'] }
+        );
+
         res.status(201).json({
             message: 'Transaction completed successfully',
-            transaction: newTransaction
+            transaction: newTransaction,
+            balance: updatedAccount?.balance || null
         });
+
 
     } catch (error) {
         await t.rollback();

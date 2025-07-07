@@ -21,42 +21,68 @@ exports.createUser = async (req, res) => {
             DOB,
             branchId,
             password,
-            profile // profile data comes nested
+            bankId,
+            profile
         } = req.body;
 
         // Validate required fields
-        if (!firstname || !lastname || !email || !role || !branchId || !password) {
+        if (!firstname || !lastname || !email || !role || !password) {
             return res.status(400).json({ message: 'Required fields are missing' });
         }
 
-        // Validate email format
-        if (!/^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$/.test(email)) {
+        // Validate email
+        if (!/^[\w.-]+@([\w-]+\.)+[a-zA-Z]{2,7}$/.test(email)) {
             return res.status(400).json({ message: 'Invalid email format' });
         }
 
-        // Validate phone number format (optional)
+        // Optional phone format
         if (phone && !/^[0-9]+$/.test(phone)) {
             return res.status(400).json({ message: 'Phone number must contain only digits' });
         }
 
-        // Validate NIN format only if provided
+        // Optional NIN format
         if (nin && !/^[A-Z0-9]+$/.test(nin)) {
             return res.status(400).json({ message: 'NIN must contain only uppercase letters and digits' });
         }
 
-        // Validate role
+        // Allowed roles
         const validRoles = ['admin', 'staff', 'customer', 'bank_admin', 'customer_service'];
         if (!validRoles.includes(role)) {
             return res.status(400).json({ message: 'Invalid role specified' });
         }
 
-        // Check if the branch exists
-        const branch = await Branch.findByPk(branchId);
-        if (!branch) {
-            return res.status(404).json({ message: 'Branch not found' });
+        // Only require branchId for non-admin roles
+        const rolesThatRequireBranch = ['staff', 'customer', 'customer_service'];
+        if (rolesThatRequireBranch.includes(role) && !branchId) {
+            return res.status(400).json({ message: 'Branch ID is required for staff and customer roles' });
         }
 
-        // Check if the email or phone already exists
+        // Require bankId for bank_admin
+        if (role === 'bank_admin' && !bankId) {
+            return res.status(400).json({ message: 'bankId is required for bank_admin' });
+        }
+
+        // Require branchId for roles that are not admin or bank_admin
+        if (!['admin', 'bank_admin'].includes(role) && !branchId) {
+            return res.status(400).json({ message: 'branchId is required for this role' });
+        }
+
+        if (role === 'bank_admin') {
+            const defaultBranch = await Branch.findOne({ where: { bankId } });
+            if (!defaultBranch) {
+                return res.status(404).json({ message: 'No default branch found for this bank' });
+            }
+            branchId = defaultBranch.id; // assign to user
+        }
+        let branch = null;
+        if (branchId) {
+            branch = await Branch.findByPk(branchId);
+            if (!branch) {
+                return res.status(404).json({ message: 'Branch not found' });
+            }
+        }
+
+        // Ensure unique email or phone
         const existingUser = await User.findOne({
             where: {
                 [Op.or]: [{ email }, { phone }]
@@ -67,27 +93,25 @@ exports.createUser = async (req, res) => {
             return res.status(400).json({ message: 'User with this email or phone already exists' });
         }
 
-        // Hash password
+        // Hash credentials
         const hashedPassword = await bcrypt.hash(password, 10);
-
-        // Only hash NIN if provided
         const hashedNin = nin ? await bcrypt.hash(nin, 10) : null;
 
-        // Create the User
+        // Create User
         const newUser = await User.create({
             firstname,
             middlename,
             lastname,
             email,
             phone,
-            nin: hashedNin, // Will be null if nin wasn't provided
+            nin: hashedNin,
             role,
             DOB,
-            branchId,
+            branchId: branchId || null,
             password: hashedPassword
         }, { transaction: t });
 
-        // Create the Profile linked to this User
+        // Create Profile
         const newProfile = await Profile.create({
             userId: newUser.id,
             profilePicture: profile?.profilePicture || null,
@@ -98,13 +122,12 @@ exports.createUser = async (req, res) => {
             contactNumber: profile?.contactNumber,
             address: profile?.address,
             bio: profile?.bio || '',
-            passwordResetToken: null, // Should not be set at creation
-            refreshToken: null // Should not be set at creation
+            passwordResetToken: null,
+            refreshToken: null
         }, { transaction: t });
 
         await t.commit();
 
-        // Remove sensitive data before sending response
         const userResponse = { ...newUser.get() };
         delete userResponse.password;
         delete userResponse.nin;
@@ -123,6 +146,7 @@ exports.createUser = async (req, res) => {
         });
     }
 };
+
 
 exports.getAllUsers = async (req, res) => {
     try {
@@ -246,7 +270,7 @@ exports.updateUser = async (req, res) => {
         const hasChanges = Object.keys(updates).some(key => {
             // Skip comparison for hashed fields
             if (key === 'password' || key === 'nin') return true;
-            
+
             const currentValue = user[key];
             const newValue = updates[key];
             return newValue !== undefined && newValue !== currentValue;
@@ -290,4 +314,49 @@ exports.deleteUser = async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: 'Failed to delete user', error: error.message });
     }
+};
+
+exports.getUsersInBankByRole = async (req, res) => {
+  const { bankId, role } = req.params;
+
+  if (!bankId || !role) {
+    return res.status(400).json({ message: "Both bankId and role are required" });
+  }
+
+  try {
+    const users = await User.findAll({
+      where: {
+        bankId,
+        role
+      },
+      attributes: { exclude: ['password'] } // Hide password field, optional
+    });
+
+    return res.status(200).json(users);
+  } catch (err) {
+    console.error('Error fetching users by bank and role:', err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+exports.getUsersByRoleInBranch = async (req, res) => {
+  try {
+    const { branchId, role } = req.params;
+
+    if (!branchId || !role) {
+      return res.status(400).json({ message: 'Both branchId and role are required' });
+    }
+
+    const users = await User.findAll({
+      where: {
+        branchId,
+        role: role.toLowerCase()
+      }
+    });
+
+    res.status(200).json(users);
+  } catch (error) {
+    console.error('Error fetching users by role in branch:', error);
+    res.status(500).json({ message: 'Failed to fetch users', error: error.message });
+  }
 };
