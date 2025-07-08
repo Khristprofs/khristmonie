@@ -139,16 +139,30 @@ exports.getAllAccountsByBank = async (req, res) => {
 
 exports.getAccountById = async (req, res) => {
     const { id } = req.params;
+    const user = req.user; // info from JWT middleware
+
     try {
         const account = await Account.findByPk(id);
+
         if (!account) {
             return res.status(404).json({ message: 'Account not found' });
         }
+        const allowedRoles = ['admin', 'bank_admin', 'customer_service', 'staff'];
+
+        if (account.userId !== user.id && !allowedRoles.includes(user.role)) {
+            return res.status(403).json({ message: 'Unauthorized access to this account' });
+        }
+
         res.status(200).json(account);
     } catch (error) {
-        res.status(500).json({ message: 'Failed to fetch account', error: error.message });
+        res.status(500).json({
+            message: 'Failed to fetch account',
+            error: error.message
+        });
     }
 };
+
+
 
 exports.getAccountsByUserId = async (req, res) => {
     const { userId } = req.params;

@@ -20,31 +20,45 @@ exports.createTransaction = async (req, res) => {
             currency,
             channel,
             description,
-            fromAccountId,
-            toAccountId,
+            fromAccountNumber,
+            toAccountNumber,
             transferPin,
             cardId,
             cardPin
         } = req.body;
 
-        // 🔐 Validate transfer pin for transfers
+        let fromAccountId = null;
+        let toAccountId = null;
+
+        // 🔐 Validate transfer pin and resolve accounts for transfers
         if (transactionType === 'transfer') {
-            if (!transferPin) {
-                return res.status(400).json({ message: 'Transfer pin is required for transfers' });
+            if (!transferPin || !fromAccountNumber || !toAccountNumber) {
+                return res.status(400).json({ message: 'Transfer pin, fromAccountNumber, and toAccountNumber are required' });
             }
 
-            const fromAccount = await Account.findByPk(fromAccountId);
-            if (!fromAccount) {
-                return res.status(404).json({ message: 'Sender account not found' });
+            const fromAccount = await Account.findOne({ where: { accountNumber: fromAccountNumber } });
+            const toAccount = await Account.findOne({ where: { accountNumber: toAccountNumber } });
+
+            if (!fromAccount || !toAccount) {
+                return res.status(404).json({ message: 'One or both account numbers are invalid' });
             }
 
             const isMatch = await bcrypt.compare(transferPin, fromAccount.transferPin);
             if (!isMatch) {
                 return res.status(403).json({ message: 'Invalid transfer pin' });
             }
+
+            if (fromAccount.currency !== toAccount.currency) {
+                return res.status(400).json({
+                    message: `Transfer not allowed between ${fromAccount.currency} and ${toAccount.currency} accounts`
+                });
+            }
+
+            fromAccountId = fromAccount.id;
+            toAccountId = toAccount.id;
         }
 
-        // 🔐 Validate card pin for ATM, POS, and online withdrawals
+        // 🔐 Validate card pin for ATM/POS/online withdrawals
         if (
             transactionType === 'withdrawal' &&
             ['atm_withdrawal', 'pos_withdrawal', 'online_withdrawal'].includes(channel)
@@ -74,8 +88,8 @@ exports.createTransaction = async (req, res) => {
             currency: currency || 'NGN',
             channel,
             description,
-            fromAccountId: transactionType !== 'deposit' ? fromAccountId : null,
-            toAccountId: transactionType !== 'withdrawal' ? toAccountId : null,
+            fromAccountNumber: transactionType !== 'deposit' ? fromAccountNumber : null,
+            toAccountNumber: transactionType !== 'withdrawal' ? toAccountNumber : null,
             reference,
             status: 'completed'
         };
@@ -83,9 +97,9 @@ exports.createTransaction = async (req, res) => {
         const newTransaction = await Transaction.create(transactionData, { transaction: t });
 
         // 💰 Update account balances
-        await updateBalances({ transactionType, amount, fromAccountId, toAccountId }, t);
+        await updateBalances({ transactionType, amount, fromAccountNumber, toAccountNumber }, t);
 
-        // 🔔 Notify users
+        // 🔔 Notifications
         if (transactionType === 'transfer') {
             const from = await Account.findByPk(fromAccountId);
             const to = await Account.findByPk(toAccountId);
@@ -118,7 +132,6 @@ exports.createTransaction = async (req, res) => {
             balance: updatedAccount?.balance || null
         });
 
-
     } catch (error) {
         await t.rollback();
         res.status(500).json({
@@ -127,6 +140,7 @@ exports.createTransaction = async (req, res) => {
         });
     }
 };
+
 
 exports.getAllTransactions = async (req, res) => {
     try {
@@ -207,12 +221,21 @@ exports.getAllTransactionsByBranch = async (req, res) => {
 
 exports.getTransactionById = async (req, res) => {
     const { id } = req.params;
+    const user = req.user; // assumes req.user is set by authentication middleware
 
     try {
         const transaction = await Transaction.findByPk(id, {
             include: [
-                { model: Account, as: 'fromAccount' },
-                { model: Account, as: 'toAccount' }
+                {
+                    model: Account,
+                    as: 'account',
+                    include: [
+                        {
+                            model: Branch,
+                            as: 'branch'
+                        }
+                    ]
+                }
             ]
         });
 
@@ -220,12 +243,33 @@ exports.getTransactionById = async (req, res) => {
             return res.status(404).json({ message: 'Transaction not found' });
         }
 
+        const transactionUserId = transaction.userId;
+        const transactionBankId = transaction.account?.branch?.bankId;
+        const transactionBranchId = transaction.account?.branch?.id;
+
+        const { role, id: currentUserId, bankId: userBankId, branchId: userBranchId } = user;
+
+        const isAdmin = role === 'admin';
+        const isBankAdmin = role === 'bank_admin' && userBankId === transactionBankId;
+        const isBranchStaff =
+            ['staff', 'bank_teller', 'customer_service'].includes(role) &&
+            userBranchId === transactionBranchId;
+        const isOwner = currentUserId === transactionUserId;
+
+        if (!(isAdmin || isBankAdmin || isBranchStaff || isOwner)) {
+            return res.status(403).json({ message: 'Unauthorized to access this transaction' });
+        }
+
         res.status(200).json(transaction);
     } catch (error) {
         console.error('Fetch Transaction Error:', error);
-        res.status(500).json({ message: 'Failed to fetch transaction', error: error.message });
+        res.status(500).json({
+            message: 'Failed to fetch transaction',
+            error: error.message
+        });
     }
 };
+
 
 exports.getTransactionsByAccountId = async (req, res) => {
     const { accountId } = req.params;

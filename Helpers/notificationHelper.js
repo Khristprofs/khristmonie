@@ -24,12 +24,46 @@ exports.createNotification = async ({
   channel = 'in-app',
   priority = 'normal',
   referenceId,
-  referenceType = 'Transaction'
+  referenceType = 'Transaction',
+  fromAccountNumber = '',
+  toAccountNumber = ''
 }) => {
   const symbol = getCurrencySymbol(currency);
 
-  const defaultTitle = title || `${transactionType.toUpperCase()} - ${symbol}${amount}`;
-  const defaultMessage = message || `Your ${transactionType} of ${symbol}${amount} was successful.`;
+  let defaultTitle = '';
+  let defaultMessage = '';
+
+  switch (transactionType) {
+    case 'transfer':
+      if (fromAccountNumber && toAccountNumber) {
+        defaultTitle = title || `Transfer of ${symbol}${amount}`;
+        defaultMessage =
+          message ||
+          `Transfer of ${symbol}${amount} from ${fromAccountNumber} to ${toAccountNumber} completed successfully.`;
+      } else if (fromAccountNumber) {
+        defaultTitle = title || `Sent ${symbol}${amount}`;
+        defaultMessage =
+          message ||
+          `You sent ${symbol}${amount} from account ${fromAccountNumber}.`;
+      } else if (toAccountNumber) {
+        defaultTitle = title || `Received ${symbol}${amount}`;
+        defaultMessage =
+          message ||
+          `You received ${symbol}${amount} to account ${toAccountNumber}.`;
+      } else {
+        defaultTitle = title || `Transfer - ${symbol}${amount}`;
+        defaultMessage =
+          message ||
+          `Your transfer of ${symbol}${amount} was successful.`;
+      }
+      break;
+
+    default:
+      defaultTitle = title || `${transactionType.toUpperCase()} - ${symbol}${amount}`;
+      defaultMessage =
+        message || `Your ${transactionType} of ${symbol}${amount} was successful.`;
+      break;
+  }
 
   return await Notification.create({
     userId,

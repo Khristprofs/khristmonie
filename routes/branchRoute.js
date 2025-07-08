@@ -8,7 +8,7 @@ const verifyRoles = require('../Helpers/verifyRole');
 router.route('/create')
     .post(
         authenticateToken,
-        verifyRoles(rolesList.admin),
+        verifyRoles(rolesList.admin, rolesList.bank_admin),
         branchController.createBranch
     );
 router.route('/all')

@@ -15,13 +15,13 @@ const Transaction = sequelize.define('Transaction', {
         type: DataTypes.INTEGER,
         allowNull: false,
     },
-    fromAccountId: {
-        type: DataTypes.INTEGER,
-        allowNull: true, // Only used in transfers
+    fromAccountNumber: {
+        type: DataTypes.STRING,
+        allowNull: true, // Used in transfers
     },
-    toAccountId: {
-        type: DataTypes.INTEGER,
-        allowNull: true, // Only used in transfers
+    toAccountNumber: {
+        type: DataTypes.STRING,
+        allowNull: true, // Used in transfers
     },
     transactionType: {
         type: DataTypes.ENUM('deposit', 'withdrawal', 'transfer'),
@@ -43,11 +43,6 @@ const Transaction = sequelize.define('Transaction', {
         type: DataTypes.ENUM('USD', 'EUR', 'GBP', 'NGN', 'KES', 'ZAR'),
         allowNull: false,
         defaultValue: 'NGN',
-        validate: {
-            isAlpha: true,
-            len: [3, 3],
-            isIn: [['USD', 'EUR', 'GBP', 'NGN', 'KES', 'ZAR']],
-        },
     },
     channel: {
         type: DataTypes.ENUM('online', 'POS', 'ATM', 'bank_transfer', 'inBank_withdrawal'),
@@ -61,9 +56,6 @@ const Transaction = sequelize.define('Transaction', {
         type: DataTypes.ENUM('pending', 'completed', 'failed'),
         allowNull: false,
         defaultValue: 'pending',
-        validate: {
-            isIn: [['pending', 'completed', 'failed']],
-        },
     },
     reference: {
         type: DataTypes.STRING,
@@ -83,27 +75,19 @@ const Transaction = sequelize.define('Transaction', {
     paranoid: true,
 });
 
-// ✅ Associations
 Transaction.associate = (models) => {
+    // 🧑 User who initiated the transaction
     Transaction.belongsTo(models.User, {
         foreignKey: 'userId',
         as: 'user',
     });
 
+    // 💳 Primary account involved in transaction
     Transaction.belongsTo(models.Account, {
         foreignKey: 'accountId',
         as: 'account',
     });
-
-    Transaction.belongsTo(models.Account, {
-        foreignKey: 'fromAccountId',
-        as: 'fromAccount',
-    });
-
-    Transaction.belongsTo(models.Account, {
-        foreignKey: 'toAccountId',
-        as: 'toAccount',
-    });
 };
+
 
 module.exports = Transaction;
