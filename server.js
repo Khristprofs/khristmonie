@@ -15,6 +15,7 @@ const authRoute = require('./routes/authRoute');
 const refreshRoute = require('./routes/refreshRoute');
 const cookieParser = require('cookie-parser');
 const healthRoute = require('./routes/healthRoute');
+const adminRoutes = require('./routes/adminRoute');
 
 const db = require('./models'); // This includes sequelize and models
 
@@ -28,7 +29,7 @@ app.use(cookieParser())
 
 const cors = require('cors');
 app.use(cors({
-  origin: 'http://localhost:2000', // your frontend URL
+  origin: 'http://localhost:3000', // your frontend URL
   credentials: true,
 }));
 
@@ -47,6 +48,7 @@ app.use('/api/v1/repayment', loanRepaymentRoute);
 app.use('/api/v1/auth', authRoute);
 app.use('/api/v1/refresh', refreshRoute);
 app.use('/api/v1/health', healthRoute);
+app.use('/api/v1/admin', adminRoutes);
 
 // Test DB connection
 db.sequelize.authenticate()

@@ -8,7 +8,7 @@ const verifyRoles = (...allowedRoles) => {
         }
 
         // Check if any of the user's roles matches allowed roles
-        const hasPermission = req.roles.some(role => 
+        const hasPermission = req.roles.some(role =>
             allowedRoles.includes(role)
         );
 
@@ -16,7 +16,7 @@ const verifyRoles = (...allowedRoles) => {
             console.error(`User with roles [${req.roles}] not authorized for [${allowedRoles}]`);
             return res.sendStatus(403); // Forbidden
         }
-        
+
         next();
     };
 };
