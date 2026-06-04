@@ -1,134 +1,45 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../db/connection');
+module.exports = (sequelize, DataTypes) => {
+    const Account = sequelize.define('Account', {
+        id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+        },
 
-const Account = sequelize.define('Account', {
-    id: {
-        type: DataTypes.INTEGER,
-        autoIncrement: true,
-        primaryKey: true,
-    },
-    userId: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        references: {
-            model: 'users',
-            key: 'id',
-        },
-        onDelete: 'CASCADE',
-        onUpdate: 'CASCADE',
-    },
-    branchId: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-        references: {
-            model: 'branches',
-            key: 'id',
-        },
-        onDelete: 'SET NULL',
-        onUpdate: 'CASCADE',
-    },
-    accountName: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        unique: true,
-        validate: {
-            notEmpty: true,
-        },
-    },
-    accountNumber: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        unique: true,
-        validate: {
-            notEmpty: true,
-            isNumeric: true,
-            len: [10, 12],
-        },
-    },
-    accountType: {
-        type: DataTypes.ENUM('savings', 'current', 'fixed', 'joint'),
-        allowNull: false,
-        validate: {
-            isIn: [['savings', 'current', 'fixed', 'joint']],
-            notEmpty: true,
-        },
-    },
-    transferPin: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        validate: {
-            notEmpty: true,
-        },
-    },
-    balance: {
-        type: DataTypes.DECIMAL(15, 2),
-        allowNull: false,
-        defaultValue: 0.00,
-        validate: {
-            isDecimal: true,
-            min: 0.00,
-        },
-    },
-    currency: {
-        type: DataTypes.ENUM('USD', 'NGN', 'CAD', 'EUR', 'AUD', 'GBP'),
-        allowNull: false,
-        defaultValue: 'USD',
-        validate: {
-            notEmpty: true,
-            isAlpha: true,
-            len: [3, 3],
-            isIn: [['USD', 'NGN', 'CAD', 'EUR', 'AUD', 'GBP']],
-        },
-    },
-    status: {
-        type: DataTypes.ENUM('active', 'inactive', 'closed'),
-        allowNull: true,
-        defaultValue: 'active',
-        validate: {
-            isIn: [['active', 'inactive', 'closed']],
-        },
-    },
-    isJoint: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: false,
-    }
-}, { 
-    tableName: 'accounts',
-    timestamps: true,
-    createdAt: 'created',
-    updatedAt: 'updated',
-    paranoid: true,
-    deletedAt: 'deleted',
-});
+        userId: DataTypes.INTEGER,
+        branchId: DataTypes.INTEGER,
 
-// Associations
-Account.associate = (models) => {
-    Account.belongsToMany(models.User, {
-        through: models.UserAccount,
-        foreignKey: 'accountId',
-        otherKey: 'userId',
-        as: 'users',
+        accountName: DataTypes.STRING,
+        accountNumber: DataTypes.STRING,
+
+        accountType: DataTypes.ENUM('savings', 'current', 'fixed', 'joint'),
+
+        transferPin: DataTypes.STRING,
+
+        balance: {
+            type: DataTypes.DECIMAL(15, 2),
+            defaultValue: 0,
+        },
+
+        currency: DataTypes.ENUM('USD', 'NGN', 'EUR', 'GBP'),
+        status: DataTypes.ENUM('active', 'inactive', 'closed'),
+
+        isJoint: DataTypes.BOOLEAN,
+    }, {
+        tableName: 'accounts',
+        timestamps: true,
+        paranoid: true,
     });
 
-    Account.hasMany(models.Transaction, {
-        foreignKey: 'accountId',
-        as: 'transactions',
-    });
+    Account.associate = (models) => {
+        Account.belongsTo(models.User, { foreignKey: 'userId', as: 'user' });
+        Account.belongsTo(models.Branch, { foreignKey: 'branchId', as: 'branch' });
 
-    Account.hasMany(models.Card, {
-        foreignKey: 'accountId',
-        as: 'cards',
-    });
+        Account.hasMany(models.Transaction, {
+            foreignKey: 'accountId',
+            as: 'transactions',
+        });
+    };
 
-    Account.belongsTo(models.Branch, {
-        foreignKey: 'branchId',
-        as: 'branch',
-    });
-
-    Account.belongsTo(models.User, {
-        foreignKey: 'userId',
-        as: 'user',
-    });
+    return Account;
 };
-
-module.exports = Account;

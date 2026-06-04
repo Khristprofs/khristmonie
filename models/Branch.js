@@ -1,87 +1,33 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../db/connection');
+module.exports = (sequelize, DataTypes) => {
+    const Branch = sequelize.define('Branch', {
+        id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+        },
 
-const Branch = sequelize.define('Branch', {
-    id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true,
-    },
-    bankId: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-    },
-    name: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        validate: { notEmpty: true },
-    },
-    code: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        unique: true,
-        validate: {
-            notEmpty: true,
-            isAlphanumeric: true,
+        bankId: DataTypes.INTEGER,
+        name: DataTypes.STRING,
+        code: {
+            type: DataTypes.STRING,
+            unique: true,
         },
-    },
-    address: {
-        type: DataTypes.STRING,
-        allowNull: true,
-    },
-    phone: {
-        type: DataTypes.STRING,
-        allowNull: true,
-        validate: {
-            isNumeric: true,
-        },
-    },
-    email: {
-        type: DataTypes.STRING,
-        allowNull: true,
-        validate: {
-            isEmail: true,
-        },
-    },
-    city: {
-        type: DataTypes.STRING,
-        allowNull: true,
-    },
-    managerName: {
-        type: DataTypes.STRING,
-        allowNull: true,
-    }
-}, {
-    tableName: 'branches',
-    timestamps: true,
-    createdAt: 'created',
-    updatedAt: 'updated',
-    deletedAt: 'deleted',
-    paranoid: true, // enables soft delete
-});
-
-// ✅ Association defined properly (delayed until models are loaded)
-Branch.associate = (models) => {
-    // Belongs to a bank
-    Branch.belongsTo(models.Bank, {
-        foreignKey: 'bankId',
-        as: 'bank',
-        onDelete: 'CASCADE',
+        address: DataTypes.STRING,
+        phone: DataTypes.STRING,
+        email: DataTypes.STRING,
+        city: DataTypes.STRING,
+        managerName: DataTypes.STRING,
+    }, {
+        tableName: 'branches',
+        timestamps: true,
+        paranoid: true,
     });
 
-    // Has many users
-    Branch.hasMany(models.User, {
-        foreignKey: 'branchId',
-        as: 'users',
-        onDelete: 'CASCADE',
-    });
+    Branch.associate = (models) => {
+        Branch.belongsTo(models.Bank, { foreignKey: 'bankId', as: 'bank' });
+        Branch.hasMany(models.User, { foreignKey: 'branchId', as: 'users' });
+        Branch.hasMany(models.Account, { foreignKey: 'branchId', as: 'accounts' });
+    };
 
-    // Has many accounts
-    Branch.hasMany(models.Account, {
-        foreignKey: 'branchId',
-        as: 'accounts',
-        onDelete: 'SET NULL',
-    });
+    return Branch;
 };
-
-module.exports = Branch;

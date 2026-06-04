@@ -1,6 +1,6 @@
 const { Bank, sequelize } = require('../models');
 const Branch = require('../models/Branch');
-const User = require('../models/User');
+const { User } = require('../models');
 const Profile = require('../models/Profile');
 const bcrypt = require('bcrypt');
 const { Op } = require('sequelize');

@@ -1,66 +1,29 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../db/connection');
-
-const Bank = sequelize.define('Bank', {
-    id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true,
-    },
-    name: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        unique: true,
-        validate: { notEmpty: true },
-    },
-    description: {
-        type: DataTypes.TEXT,
-        allowNull: true,
-        validate: { notEmpty: true },
-    },
-    logo: {
-        type: DataTypes.STRING,
-        allowNull: true,
-        // validate: {
-        //     notEmpty: true,
-        //     isUrl: true,
-        // },
-    },
-    code: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        unique: true,
-        validate: {
-            notEmpty: true,
-            isAlphanumeric: true,
+module.exports = (sequelize, DataTypes) => {
+    const Bank = sequelize.define('Bank', {
+        id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
         },
-    },
-    address: {
-        type: DataTypes.STRING,
-        allowNull: true,
-        validate: { notEmpty: true },
-    },
-    country: {
-        type: DataTypes.STRING,
-        allowNull: true,
-        validate: { notEmpty: true },
-    }
-}, {
-    tableName: 'banks',
-    timestamps: true,
-    createdAt: 'created',
-    updatedAt: 'updated',
-    deletedAt: 'deleted',
-    paranoid: true,
-});
 
-// ✅ Define associations in a static method
-Bank.associate = (models) => {
-    Bank.hasMany(models.Branch, {
-        foreignKey: 'bankId',
-        as: 'branches',
-        onDelete: 'CASCADE',
+        name: DataTypes.STRING,
+        description: DataTypes.TEXT,
+        logo: DataTypes.STRING,
+        code: {
+            type: DataTypes.STRING,
+            unique: true,
+        },
+        address: DataTypes.STRING,
+        country: DataTypes.STRING,
+    }, {
+        tableName: 'banks',
+        timestamps: true,
+        paranoid: true,
     });
-};
 
-module.exports = Bank;
+    Bank.associate = (models) => {
+        Bank.hasMany(models.Branch, { foreignKey: 'bankId', as: 'branches' });
+    };
+
+    return Bank;
+};
