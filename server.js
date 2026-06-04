@@ -1,5 +1,9 @@
-const express = require('express');
 require('dotenv').config();
+
+const express = require('express');
+const cookieParser = require('cookie-parser');
+const cors = require('cors');
+
 const bankRoute = require('./routes/bankRoute');
 const branchRoute = require('./routes/branchRoute');
 const userRoute = require('./routes/userRoute');
@@ -13,27 +17,35 @@ const loanRoute = require('./routes/loanRoute');
 const loanRepaymentRoute = require('./routes/loanRepaymentRoute');
 const authRoute = require('./routes/authRoute');
 const refreshRoute = require('./routes/refreshRoute');
-const cookieParser = require('cookie-parser');
 const healthRoute = require('./routes/healthRoute');
 const adminRoutes = require('./routes/adminRoute');
 
-const db = require('./models'); // This includes sequelize and models
+const db = require('./models');
 
 const app = express();
 const PORT = process.env.PORT || 2000;
 
-// Middleware to parse JSON bodies
+// ========================
+// Middleware
+// ========================
+
 app.use(express.json());
+app.use(cookieParser());
 
-app.use(cookieParser())
+app.use(
+  cors({
+    origin: [
+      'http://localhost:3000',
+      process.env.FRONTEND_URL,
+    ].filter(Boolean),
+    credentials: true,
+  })
+);
 
-const cors = require('cors');
-app.use(cors({
-  origin: 'http://localhost:3000', // your frontend URL
-  credentials: true,
-}));
+// ========================
+// Routes
+// ========================
 
-//use routes
 app.use('/api/v1/bank', bankRoute);
 app.use('/api/v1/branch', branchRoute);
 app.use('/api/v1/user', userRoute);
@@ -50,23 +62,31 @@ app.use('/api/v1/refresh', refreshRoute);
 app.use('/api/v1/health', healthRoute);
 app.use('/api/v1/admin', adminRoutes);
 
-// Test DB connection
-db.sequelize.authenticate()
-  .then(() => {
-    console.log('✅ PostgreSQL connected successfully.');
-  })
-  .catch((err) => {
-    console.error('❌ Error connecting to the database:', err);
-  });
+// ========================
+// Startup
+// ========================
 
-// Sync all models
-db.sequelize.sync({ force: true }) // Set to true only for development
-  .then(() => {
-    console.log('✅ Database & tables synced!');
+const startServer = async () => {
+  try {
+    console.log('NODE_ENV:', process.env.NODE_ENV);
+    console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
+
+    await db.sequelize.authenticate();
+    console.log('✅ PostgreSQL connected successfully');
+
+    // Safe sync
+    await db.sequelize.sync();
+
+    console.log('✅ Database synced successfully');
+
     app.listen(PORT, () => {
-      console.log(`🚀 Server running at http://localhost:${PORT}`);
+      console.log(`🚀 Server running on port ${PORT}`);
     });
-  })
-  .catch((err) => {
-    console.error('❌ Error syncing database:', err);
-  });
+
+  } catch (error) {
+    console.error('❌ Database startup error:', error);
+    process.exit(1);
+  }
+};
+
+startServer();
