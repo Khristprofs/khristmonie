@@ -2,6 +2,9 @@ const { User } = require('../models');
 const bcrypt = require('bcryptjs');
 const db = require('../models');
 
+console.log(Object.keys(db));
+console.log(db.User);
+
 const authenticateUser = async (email, password) => {
     console.log('User table:', User.getTableName());
     const user = await User.findOne({

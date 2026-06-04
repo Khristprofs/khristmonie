@@ -4,14 +4,17 @@ const Sequelize = require('sequelize');
 
 const basename = path.basename(__filename);
 const env = process.env.NODE_ENV || 'development';
-const config = require(__dirname + '/../config/config.js')[env];
+const config = require(path.join(__dirname, '../config/config.js'))[env];
 
 const db = {};
 
 let sequelize;
 
 if (config.use_env_variable) {
-  sequelize = new Sequelize(process.env[config.use_env_variable], config);
+  sequelize = new Sequelize(
+    process.env[config.use_env_variable],
+    config
+  );
 } else {
   sequelize = new Sequelize(
     config.database,
@@ -22,22 +25,28 @@ if (config.use_env_variable) {
 }
 
 fs.readdirSync(__dirname)
-  .filter(file =>
-    file.indexOf('.') !== 0 &&
-    file !== basename &&
-    file.slice(-3) === '.js'
+  .filter(
+    (file) =>
+      file.indexOf('.') !== 0 &&
+      file !== basename &&
+      file.slice(-3) === '.js'
   )
-  .forEach(file => {
-    const model = require(path.join(__dirname, file));
+  .forEach((file) => {
+    const modelFactory = require(path.join(__dirname, file));
 
-    if (model && model.name) {
+    if (typeof modelFactory === 'function') {
+      const model = modelFactory(
+        sequelize,
+        Sequelize.DataTypes
+      );
+
       db[model.name] = model;
     }
   });
 
-// FIXED association loop
+// Run associations after all models are loaded
 Object.keys(db).forEach((modelName) => {
-  if (db[modelName].associate) {
+  if (typeof db[modelName].associate === 'function') {
     db[modelName].associate(db);
   }
 });
