@@ -1,27 +1,40 @@
-// connection.js
 require('dotenv').config();
 const { Sequelize } = require('sequelize');
 
-// Create Sequelize instance with environment variables
-const sequelize = new Sequelize(
-  process.env.DB_NAME,
-  process.env.DB_USER,
-  process.env.DB_PASSWORD,
-  {
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    dialect: 'postgres',
-    logging: false, // set to true to see SQL logs in console
-  }
-);
+let sequelize;
 
-// Test the connection
+if (process.env.NODE_ENV === 'production') {
+  sequelize = new Sequelize(process.env.DATABASE_URL, {
+    dialect: 'postgres',
+    protocol: 'postgres',
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false,
+      },
+    },
+    logging: false,
+  });
+} else {
+  sequelize = new Sequelize(
+    process.env.DB_NAME,
+    process.env.DB_USER,
+    process.env.DB_PASSWORD,
+    {
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT,
+      dialect: 'postgres',
+      logging: false,
+    }
+  );
+}
+
 (async () => {
   try {
     await sequelize.authenticate();
-    console.log('Connection to PostgreSQL has been established successfully.');
+    console.log('✅ Connection.js database connected');
   } catch (error) {
-    console.error('CONNECTION.JS FAILED:', error);
+    console.error('❌ CONNECTION.JS FAILED:', error);
   }
 })();
 
