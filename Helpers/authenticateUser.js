@@ -1,9 +1,6 @@
 const { User, sequelize } = require('../models');
 const bcrypt = require('bcryptjs');
 
-console.log(Object.keys(db));
-console.log(db.User);
-
 const authenticateUser = async (email, password) => {
     console.log("================================");
     console.log("Searching for:", email);
