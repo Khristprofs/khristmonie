@@ -1,6 +1,6 @@
 const { User } = require('../models');
 const bcrypt = require('bcryptjs');
-const sequelize = require('../db/connection');
+const db = require('../models');
 
 const authenticateUser = async (email, password) => {
     console.log('User table:', User.getTableName());
