@@ -7,9 +7,12 @@ console.log(db.User);
 
 const authenticateUser = async (email, password) => {
     console.log('User table:', User.getTableName());
+    console.log("Searching email:", email);
+    console.log("Table:", User.getTableName());
     const user = await User.findOne({
         where: { email }
     });
+    console.log("Found:", user);
 
     if (!user) {
         throw new Error('User not found');
