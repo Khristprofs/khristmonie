@@ -4,9 +4,11 @@ const bcrypt = require('bcryptjs');
 const authenticateUser = async (email, password) => {
     try {
         const user = await User.findOne({ where: { email } });
-        
+
         if (!user) {
-            throw new Error('User not found');
+            const error = new Error("Invalid credentials");
+            error.statusCode = 401;
+            throw error;
         }
 
         const isMatch = await bcrypt.compare(password, user.password);

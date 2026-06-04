@@ -27,9 +27,12 @@ exports.login = async (req, res) => {
             message: 'Login successful',
         });
     } catch (err) {
-        console.error('Login error:', err.message);
-        res.status(err.message.includes('credentials') ? 401 : 500).json({
-            message: err.message || 'Login failed',
+        console.error("LOGIN ERROR");
+        console.error(err);
+
+        return res.status(500).json({
+            message: err.message,
+            stack: err.stack
         });
     }
 };
