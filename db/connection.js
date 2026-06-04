@@ -16,6 +16,8 @@ if (process.env.NODE_ENV === 'production') {
     logging: false,
   });
 } else {
+  console.log('DB_NAME:', process.env.DB_NAME);
+  console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
   sequelize = new Sequelize(
     process.env.DB_NAME,
     process.env.DB_USER,
