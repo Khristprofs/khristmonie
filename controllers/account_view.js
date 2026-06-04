@@ -1,8 +1,8 @@
-const Account = require('../models/Account');
+const { Account } = require('../models');
 const bcrypt = require('bcrypt');
-const User = require('../models/User');
-const Branch = require('../models/Branch');
-const UserAccount = require('../models/UserAccount')
+const {User} = require('../models');
+const {Branch} = require('../models');
+const {UserAccount} = require('../models')
 
 // Helper to generate a unique 10-digit account number
 const generateAccountNumber = async () => {

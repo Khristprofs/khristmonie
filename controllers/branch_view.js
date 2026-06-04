@@ -1,5 +1,5 @@
-const Bank = require('../models/Bank');
-const Branch = require('../models/Branch');
+const {Bank} = require('../models');
+const {Branch} = require('../models');
 
 exports.createBranch = async (req, res) => {
     try {

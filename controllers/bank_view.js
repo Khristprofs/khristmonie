@@ -1,4 +1,4 @@
-const Bank = require('../models/Bank');
+const {Bank} = require('../models');
 
 
 exports.createBank = async (req, res) => {

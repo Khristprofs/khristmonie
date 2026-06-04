@@ -1,7 +1,7 @@
 const { Bank, sequelize } = require('../models');
-const Branch = require('../models/Branch');
+const { Branch } = require('../models');
 const { User } = require('../models');
-const Profile = require('../models/Profile');
+const { Profile } = require('../models');
 const bcrypt = require('bcrypt');
 const { Op } = require('sequelize');
 const saltRounds = 10;

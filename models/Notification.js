@@ -1,82 +1,46 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../db/connection');
-
-const Notification = sequelize.define('Notification', {
-    id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true,
-    },
-    userId: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-    },
-    type: {
-        type: DataTypes.ENUM('info', 'warning', 'error', 'success'),
-        allowNull: false,
-        validate: {
-            isIn: [['info', 'warning', 'error', 'success']],
+module.exports = (sequelize, DataTypes) => {
+    const Notification = sequelize.define('Notification', {
+        id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+        userId: { type: DataTypes.INTEGER, allowNull: false },
+        type: {
+            type: DataTypes.ENUM('info', 'warning', 'error', 'success'),
+            allowNull: false,
         },
-    },
-    title: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        validate: {
-            notEmpty: true,
+        title: DataTypes.STRING,
+        message: DataTypes.TEXT,
+        channel: {
+            type: DataTypes.ENUM('email', 'sms', 'push', 'whatsapp', 'in-app'),
+            defaultValue: 'in-app',
         },
-    },
-    message: {
-        type: DataTypes.TEXT,
-        allowNull: false,
-        validate: {
-            notEmpty: true,
+        priority: {
+            type: DataTypes.ENUM('low', 'normal', 'high'),
+            defaultValue: 'normal',
         },
-    },
-    channel: {
-        type: DataTypes.ENUM('email', 'sms', 'push', 'whatsapp', 'in-app'),
-        allowNull: false,
-        defaultValue: 'in-app',
-    },
-    priority: {
-        type: DataTypes.ENUM('low', 'normal', 'high'),
-        defaultValue: 'normal',
-    },
-    isRead: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: false,
-    },
-    readAt: {
-        type: DataTypes.DATE,
-        allowNull: true,
-    },
-    sentAt: {
-        type: DataTypes.DATE,
-        allowNull: false,
-        defaultValue: DataTypes.NOW,
-    },
-    referenceId: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-    },
-    referenceType: {
-        type: DataTypes.STRING,
-        allowNull: true, // e.g., 'Transaction', 'Account', etc.
-    },
-}, {
-    tableName: 'notifications',
-    timestamps: true,
-    createdAt: 'created',
-    updatedAt: 'updated',
-    paranoid: true,
-});
-
-// ✅ Association
-Notification.associate = (models) => {
-    Notification.belongsTo(models.User, {
-        foreignKey: 'userId',
-        as: 'user',
-        onDelete: 'CASCADE',
+        isRead: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false,
+        },
+        readAt: DataTypes.DATE,
+        sentAt: {
+            type: DataTypes.DATE,
+            defaultValue: DataTypes.NOW,
+        },
+        referenceId: DataTypes.INTEGER,
+        referenceType: DataTypes.STRING,
+    }, {
+        tableName: 'notifications',
+        timestamps: true,
+        createdAt: 'created',
+        updatedAt: 'updated',
+        paranoid: true,
     });
-};
 
-module.exports = Notification;
+    Notification.associate = (models) => {
+        Notification.belongsTo(models.User, {
+            foreignKey: 'userId',
+            as: 'user',
+        });
+    };
+
+    return Notification;
+};
