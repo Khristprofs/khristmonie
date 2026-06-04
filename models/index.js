@@ -28,17 +28,17 @@ fs.readdirSync(__dirname)
     file.slice(-3) === '.js'
   )
   .forEach(file => {
-    const modelFactory = require(path.join(__dirname, file));
+    const model = require(path.join(__dirname, file));
 
-    if (typeof modelFactory === 'function') {
-      const model = modelFactory(sequelize, Sequelize.DataTypes);
+    if (model && model.name) {
       db[model.name] = model;
     }
   });
 
-Object.keys(db).forEach(modelName => {
-  if (db[db[modelName].name].associate) {
-    db[db[modelName].name].associate(db);
+// FIXED association loop
+Object.keys(db).forEach((modelName) => {
+  if (db[modelName].associate) {
+    db[modelName].associate(db);
   }
 });
 

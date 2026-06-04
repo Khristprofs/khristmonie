@@ -1,6 +1,6 @@
 const { LoanRepayment, Loan, User, Account, Card } = require('../models');
 const { createNotification } = require('../Helpers/notificationHelper');
-const { sequelize } = require('../models');
+const db = require('../models');
 const bcrypt = require('bcrypt');
 
 exports.createRepayment = async (req, res) => {

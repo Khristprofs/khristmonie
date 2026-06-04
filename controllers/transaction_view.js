@@ -1,7 +1,7 @@
 const { Account, Transaction, Card, Branch } = require('../models');
 // const { handleTransaction } = require('../Helpers/transactionHelper');
 const { createNotification } = require('../Helpers/notificationHelper');
-const sequelize = require('../db/connection');
+const db = require('../models');
 const { v4: uuidv4 } = require('uuid');
 const {
     updateBalances,
