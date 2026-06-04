@@ -2,33 +2,26 @@ const { User, sequelize } = require('../models');
 const bcrypt = require('bcryptjs');
 
 const authenticateUser = async (email, password) => {
-    console.log("================================");
-    console.log("Searching for:", email);
-    console.log("Table name:", User.getTableName());
-
-    const count = await User.count();
-    console.log("Total users:", count);
-
-    const [tables] = await sequelize.query(`
-        SELECT table_name
-        FROM information_schema.tables
-        WHERE table_schema = 'public'
+    const [dbInfo] = await sequelize.query(`
+        SELECT current_database() AS db,
+               current_user AS user
     `);
 
-    console.log("Tables:", tables);
+    console.log("DB INFO:", dbInfo);
 
-    const users = await User.findAll({
-        attributes: ['id', 'email'],
-        limit: 10
-    });
+    const [countResult] = await sequelize.query(`
+        SELECT COUNT(*) FROM users
+    `);
 
-    console.log("Users found:", users);
+    console.log("RAW SQL COUNT:", countResult);
+
+    console.log("ORM COUNT:", await User.count());
 
     const user = await User.findOne({
         where: { email }
     });
 
-    console.log("Matched user:", user);
+    console.log("FOUND USER:", user);
 
     if (!user) {
         throw new Error("User not found");
