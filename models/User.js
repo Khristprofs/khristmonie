@@ -40,7 +40,10 @@ module.exports = (sequelize, DataTypes) => {
 
     DOB: DataTypes.DATEONLY,
     branchId: DataTypes.INTEGER,
-    bankId: DataTypes.INTEGER,
+    bankId: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
 
     status: {
       type: DataTypes.ENUM('active', 'inactive', 'suspended'),

@@ -74,9 +74,8 @@ const startServer = async () => {
     await db.sequelize.authenticate();
     console.log('✅ PostgreSQL connected successfully');
 
-    // Safe sync
     if (process.env.NODE_ENV !== 'production') {
-      await db.sequelize.sync();
+      await db.sequelize.sync({ alter: true });
       console.log('✅ Database synced successfully');
     }
 

@@ -10,7 +10,7 @@ const saltRounds = 10;
 exports.createUser = async (req, res) => {
     const t = await sequelize.transaction();
     try {
-        const {
+        let {
             firstname,
             middlename,
             lastname,
@@ -107,6 +107,7 @@ exports.createUser = async (req, res) => {
             nin: hashedNin,
             role,
             DOB,
+            bankId,
             branchId: branchId || null,
             password: hashedPassword
         }, { transaction: t });
