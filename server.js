@@ -75,9 +75,10 @@ const startServer = async () => {
     console.log('✅ PostgreSQL connected successfully');
 
     // Safe sync
-    await db.sequelize.sync();
-
-    console.log('✅ Database synced successfully');
+    if (process.env.NODE_ENV !== 'production') {
+      await db.sequelize.sync();
+      console.log('✅ Database synced successfully');
+    }
 
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
