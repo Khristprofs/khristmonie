@@ -1,6 +1,7 @@
 const authenticateUser = require('../Helpers/authenticateUser');
 const generateToken = require('../Helpers/generateToken');
 require('dotenv').config();
+const { User } = require('../models')
 
 exports.login = async (req, res) => {
     try {
