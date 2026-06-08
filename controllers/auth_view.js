@@ -6,13 +6,10 @@ exports.login = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        // Validate user
         const user = await authenticateUser(email, password);
 
-        // Generate tokens
         const { token, refreshToken } = generateToken(user);
 
-        // Set refresh token in cookie (optional but recommended)
         res.cookie('refreshToken', refreshToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
@@ -20,19 +17,39 @@ exports.login = async (req, res) => {
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
-        // Respond with token and user data
         res.status(200).json({
             user,
-            token, // ✅ using `token` (not `accessToken`) to match frontend
+            token,
             message: 'Login successful',
         });
     } catch (err) {
-        console.error("LOGIN ERROR");
         console.error(err);
 
-        return res.status(500).json({
+        res.status(500).json({
             message: err.message,
-            stack: err.stack
+        });
+    }
+};
+
+exports.getCurrentUser = async (req, res) => {
+    try {
+        const user = await User.findByPk(req.user.id);
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            user
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
         });
     }
 };
